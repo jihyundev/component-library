@@ -1,27 +1,32 @@
-import { useState, useMemo, MouseEvent, MutableRefObject } from 'react';
+import { useState, useMemo, MouseEvent, RefObject } from 'react';
 import { throttle } from 'src/utils/util';
 
 type DraggableHook = {
-  onMouseDown: (e: MouseEvent) => void,
-  onMouseMove: (e: MouseEvent) => void,
-  onMouseUp: (e: MouseEvent) => void,
-  onMouseLeave: (e: MouseEvent) => void
-}
+  onMouseDown: (e: MouseEvent) => void;
+  onMouseMove: (e: MouseEvent) => void;
+  onMouseUp: (e: MouseEvent) => void;
+  onMouseLeave: (e: MouseEvent) => void;
+};
 
-export const useDraggable = (scrollerRef: MutableRefObject<HTMLElement>): DraggableHook => {
+export const useDraggable = (
+  scrollerRef: RefObject<HTMLElement>
+): DraggableHook => {
   const [isDragging, setIsDragging] = useState<boolean>(false);
-  const [startX, setStartX] = useState<number>(0)
+  const [startX, setStartX] = useState<number>(0);
   const [totalX, setTotalX] = useState<number>(0);
 
-  const preventClick = useMemo(() => (e: MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-  }, [])
+  const preventClick = useMemo(
+    () => (e: MouseEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    },
+    []
+  );
 
   const onDragStart = (e: MouseEvent) => {
     setIsDragging(true);
-    const x = e.clientX
-    setStartX(x)
+    const x = e.clientX;
+    setStartX(x);
     if (scrollerRef.current && 'scrollLeft' in scrollerRef.current) {
       setTotalX(x + scrollerRef.current.scrollLeft);
     }
@@ -29,29 +34,33 @@ export const useDraggable = (scrollerRef: MutableRefObject<HTMLElement>): Dragga
 
   const onDragEnd = (e: MouseEvent) => {
     if (!isDragging) return;
+    if (!scrollerRef.current) return;
 
-    preventClick(e)
+    preventClick(e);
     setIsDragging(false);
 
     const endX = e.clientX;
-    const childNodes = [...(scrollerRef.current?.childNodes || [])]
+    const childNodes = [...(scrollerRef.current?.childNodes || [])];
 
     if (startX !== endX) {
       childNodes.forEach((child) => {
-        child.addEventListener("click", preventClick);
-      })
+        child.addEventListener('click', (event) => {
+          console.dir(event);
+          preventClick(event);
+        });
+      });
     } else {
       childNodes.forEach((child) => {
-        child.removeEventListener("click", preventClick);
-      })
+        child.removeEventListener('click', preventClick);
+      });
     }
   };
 
   const onDragMove = (e: MouseEvent) => {
     if (!isDragging) return;
-    throttle(function() {
+    throttle(function () {
       // 클릭 등 마우스 이동 외 다른 이벤트 실행되는 것 방지
-      preventClick(e)
+      preventClick(e);
 
       // 스크롤 포지션
       const scrollLeft = totalX - e.clientX;
@@ -60,7 +69,7 @@ export const useDraggable = (scrollerRef: MutableRefObject<HTMLElement>): Dragga
         // 스크롤 발생
         scrollerRef.current.scrollLeft = scrollLeft;
       }
-    }, 100)
+    }, 100);
   };
 
   return {
@@ -68,5 +77,5 @@ export const useDraggable = (scrollerRef: MutableRefObject<HTMLElement>): Dragga
     onMouseMove: onDragMove,
     onMouseUp: onDragEnd,
     onMouseLeave: onDragEnd,
-  }
-}
+  };
+};

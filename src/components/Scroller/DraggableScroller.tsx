@@ -19,8 +19,8 @@ const Container = styled.div<DivStyleProps>`
 `;
 
 export const DraggableScroller = ({ children, maxWidth, style }: Props) => {
-  const containerRef = useRef<HTMLDivElement | null>();
-  const events = useDraggable(containerRef)
+  const containerRef = useRef<HTMLElement>(null);
+  const events = useDraggable(containerRef);
 
   return (
     <>
