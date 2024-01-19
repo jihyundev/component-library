@@ -1,5 +1,6 @@
 import { ReactNode, MouseEvent, CSSProperties, useRef, useState, useMemo } from 'react';
 import styled from '@emotion/styled';
+import { throttle } from 'src/utils/util.ts';
 
 type Props = {
   children: ReactNode;
@@ -61,17 +62,18 @@ export const DraggableScroller = ({ children, maxWidth, style }: Props) => {
 
   const onDragMove = (e: MouseEvent) => {
     if (!isDragging) return;
+    throttle(function() {
+      // 클릭 등 마우스 이동 외 다른 이벤트 실행되는 것 방지
+      preventClick(e)
 
-    // 클릭 등 마우스 이동 외 다른 이벤트 실행되는 것 방지
-    preventClick(e)
+      // 스크롤 포지션
+      const scrollLeft = totalX - e.clientX;
 
-    // 스크롤 포지션
-    const scrollLeft = totalX - e.clientX;
-
-    if (containerRef.current && 'scrollLeft' in containerRef.current) {
-      // 스크롤 발생
-      containerRef.current.scrollLeft = scrollLeft;
-    }
+      if (containerRef.current && 'scrollLeft' in containerRef.current) {
+        // 스크롤 발생
+        containerRef.current.scrollLeft = scrollLeft;
+      }
+    }, 100)
   };
 
   return (
