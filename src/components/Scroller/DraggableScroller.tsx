@@ -1,6 +1,6 @@
-import { ReactNode, MouseEvent, CSSProperties, useRef, useState, useMemo } from 'react';
+import { ReactNode, CSSProperties, useRef } from 'react';
 import styled from '@emotion/styled';
-import { throttle } from 'src/utils/util.ts';
+import { useDraggable } from 'src/hooks/useDraggable';
 
 type Props = {
   children: ReactNode;
@@ -20,72 +20,15 @@ const Container = styled.div<DivStyleProps>`
 
 export const DraggableScroller = ({ children, maxWidth, style }: Props) => {
   const containerRef = useRef<HTMLDivElement | null>();
-
-  const [isDragging, setIsDragging] = useState<boolean>(false);
-  const [startX, setStartX] = useState<number>(0)
-  const [totalX, setTotalX] = useState<number>(0);
-
-  // addEventListener, removeEventListener 가 동일한 함수 인스턴스를 참조하도록 메모이제이션 추가
-  const preventClick = useMemo(() => (e: MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-  }, [])
-
-  const onDragStart = (e: MouseEvent) => {
-    setIsDragging(true);
-    const x = e.clientX
-    setStartX(x)
-    if (containerRef.current && 'scrollLeft' in containerRef.current) {
-      setTotalX(x + containerRef.current.scrollLeft);
-    }
-  };
-
-  const onDragEnd = (e: MouseEvent) => {
-    if (!isDragging) return;
-
-    preventClick(e)
-    setIsDragging(false);
-
-    const endX = e.clientX;
-    const childNodes = [...(containerRef.current?.childNodes || [])]
-
-    if (startX !== endX) {
-      childNodes.forEach((child) => {
-        child.addEventListener("click", preventClick);
-      })
-    } else {
-      childNodes.forEach((child) => {
-        child.removeEventListener("click", preventClick);
-      })
-    }
-  };
-
-  const onDragMove = (e: MouseEvent) => {
-    if (!isDragging) return;
-    throttle(function() {
-      // 클릭 등 마우스 이동 외 다른 이벤트 실행되는 것 방지
-      preventClick(e)
-
-      // 스크롤 포지션
-      const scrollLeft = totalX - e.clientX;
-
-      if (containerRef.current && 'scrollLeft' in containerRef.current) {
-        // 스크롤 발생
-        containerRef.current.scrollLeft = scrollLeft;
-      }
-    }, 100)
-  };
+  const events = useDraggable(containerRef)
 
   return (
     <>
       <Container
         maxWidth={maxWidth}
         style={style}
-        onMouseDown={onDragStart}
-        onMouseMove={onDragMove}
-        onMouseUp={onDragEnd}
-        onMouseLeave={onDragEnd}
         ref={containerRef}
+        {...events}
       >
         {children}
       </Container>
