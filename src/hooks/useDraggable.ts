@@ -38,8 +38,10 @@ export const useDraggable = (
 
     const endX = e.clientX;
     const childNodes = [...(scrollerRef.current?.childNodes || [])];
+    const dragDiff = Math.abs(startX - endX)
 
-    if (startX !== endX) {
+    // 지나치게 작은 범위 내로 드래그할 경우, 원래대로 클릭 이벤트가 동작하게끔 오차 범위 설정
+    if (dragDiff > 10) {
       childNodes.forEach((child) => {
         child.addEventListener('click', preventUnexpectedEvents);
       });
