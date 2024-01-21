@@ -1,4 +1,4 @@
-import { useState, useMemo, MouseEvent, RefObject } from 'react';
+import { useState, useCallback, MouseEvent, RefObject } from 'react';
 import { throttle } from 'src/utils/util';
 
 type DraggableHook = {
@@ -15,15 +15,13 @@ export const useDraggable = (
   const [startX, setStartX] = useState<number>(0);
   const [totalX, setTotalX] = useState<number>(0);
 
-  const preventClick = useMemo(
-    () => (e: MouseEvent) => {
-      e.preventDefault();
-      e.stopPropagation();
-    },
-    []
-  );
+  const preventUnexpectedEvents = useCallback( (e: MouseEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+  }, []);
 
   const onDragStart = (e: MouseEvent) => {
+    preventUnexpectedEvents(e)
     setIsDragging(true);
     const x = e.clientX;
     setStartX(x);
@@ -36,7 +34,6 @@ export const useDraggable = (
     if (!isDragging) return;
     if (!scrollerRef.current) return;
 
-    preventClick(e);
     setIsDragging(false);
 
     const endX = e.clientX;
@@ -44,14 +41,11 @@ export const useDraggable = (
 
     if (startX !== endX) {
       childNodes.forEach((child) => {
-        child.addEventListener('click', (event) => {
-          console.dir(event);
-          preventClick(event);
-        });
+        child.addEventListener('click', preventUnexpectedEvents);
       });
     } else {
       childNodes.forEach((child) => {
-        child.removeEventListener('click', preventClick);
+        child.removeEventListener('click', preventUnexpectedEvents);
       });
     }
   };
@@ -60,7 +54,7 @@ export const useDraggable = (
     if (!isDragging) return;
     throttle(function () {
       // 클릭 등 마우스 이동 외 다른 이벤트 실행되는 것 방지
-      preventClick(e);
+      preventUnexpectedEvents(e);
 
       // 스크롤 포지션
       const scrollLeft = totalX - e.clientX;
